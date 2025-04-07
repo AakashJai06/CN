@@ -1,94 +1,50 @@
-/*
- * TCP File Transfer Server
- * Listens for connections, receives a file request, reads the file, and sends its content to the client.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+#include <string.h>
 #include <arpa/inet.h>
 
-#define PORT 8080
+#define PORT 5035
 #define BUFFER_SIZE 1024
 
-void handle_client(int client_socket) {
-    char buffer[BUFFER_SIZE] = {0};
-    char filename[BUFFER_SIZE] = {0};
+int main() {
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr, clientAddr;
+    char filename[BUFFER_SIZE], buffer[BUFFER_SIZE];
+    FILE *file;
+    socklen_t len = sizeof(clientAddr);
 
-    // Receive filename from client
-    int bytes_received = recv(client_socket, filename, BUFFER_SIZE, 0);
-    if (bytes_received < 0) {
-        perror("Error receiving filename");
-        close(client_socket);
-        return;
-    }
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-    // Open the requested file
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        char *error_message = "File not found";
-        send(client_socket, error_message, strlen(error_message), 0);
-        perror("File not found");
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(PORT);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+    listen(serverSocket, 5);
+    printf("Waiting for client...\n");
+
+    clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &len);
+    printf("Client connected!\n");
+
+    recv(clientSocket, filename, BUFFER_SIZE, 0);
+    printf("Requested file: %s\n", filename);
+
+    file = fopen(filename, "r");
+    if (!file) {
+        printf("File not found!\n");
+        strcpy(buffer, "ERROR: File not found.\n");
+        send(clientSocket, buffer, strlen(buffer), 0);
     } else {
-        // Read file and send its content
-        while (fgets(buffer, BUFFER_SIZE, file) != NULL) {
-            send(client_socket, buffer, strlen(buffer), 0);
-            memset(buffer, 0, BUFFER_SIZE);
+        while (fgets(buffer, BUFFER_SIZE, file)) {
+            send(clientSocket, buffer, strlen(buffer), 0);
+            usleep(10000);  // short delay to avoid flooding
         }
-
-        printf("File sent to client: %s\n", filename);
         fclose(file);
     }
-    
-    close(client_socket);
-}
 
-int main() {
-    int server_socket, client_socket;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t addr_len = sizeof(client_addr);
-
-    // Create server socket
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket == 0) {
-        perror("Socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Configure server address
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
-
-    // Bind socket to address
-    if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Bind failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Start listening
-    if (listen(server_socket, 3) < 0) {
-        perror("Listen failed");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Server is listening on port %d...\n", PORT);
-
-    while (1) {
-        // Accept client connection
-        client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
-        if (client_socket < 0) {
-            perror("Accept failed");
-            exit(EXIT_FAILURE);
-        }
-
-        printf("Client connected.\n");
-        
-        // Handle client request
-        handle_client(client_socket);
-    }
-
-    close(server_socket);
+    printf("File transfer complete.\n");
+    close(clientSocket);
+    close(serverSocket);
     return 0;
 }
