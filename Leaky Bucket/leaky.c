@@ -1,30 +1,31 @@
-#include<stdio.h>
-int main()
-{
-    int bucket_size,n,outgoing,incoming,store=0;
-    printf("Enter bucket size : ");
-    scanf("%d",&bucket_size);
-    printf("Enter Outgoing Rate : ");
-    scanf("%d",&outgoing);
-    printf("Enter No: of Inputs : ");
-    scanf("%d",&n);
-    while(n!=0)
-    {
-        printf("\nEnter Incoming Packet Size : ");
-        scanf("%d",&incoming);
-        printf("\nIncoming Packet Size : %d\n",incoming);
-        if(incoming<=(bucket_size-store))
-        {
-            store+=incoming;
-            printf("Bucket Buffer Size %d out of %d\n",store,bucket_size);
+#include <stdio.h>
+
+int main() {
+    int bucket_size, n, outgoing, incoming, store = 0;
+    printf("Enter bucket size: ");
+    scanf("%d", &bucket_size);
+    printf("Enter outgoing rate: ");
+    scanf("%d", &outgoing);
+    printf("Enter number of inputs: ");
+    scanf("%d", &n);
+
+    while(n != 0) {
+        printf("\nEnter incoming packet size: ");
+        scanf("%d", &incoming);
+        printf("Incoming packet size: %d\n", incoming);
+
+        if(incoming <= (bucket_size - store)) {
+            store += incoming;
+            printf("Bucket buffer size: %d out of %d\n", store, bucket_size);
+        } else {
+            printf("Dropped %d packet(s)\n", incoming - (bucket_size - store));
+            store = bucket_size;
+            printf("Bucket buffer size: %d out of %d\n", store, bucket_size);
         }
-        else
-        {
-            printf("Dropped %d no: of packets.\n",incoming-(bucket_size-store));
-            printf("Bucket Buffer Size %d out of %d\n",store,bucket_size);
-            store=bucket_size;
-        }
-        store=store-outgoing;
-        printf("After Outgoing %d Packets Left out of %d in Buffer..\n\n",store,bucket_size);
+        store -= outgoing;
+        if(store < 0) store = 0;
+        printf("After outgoing, %d packet(s) left in buffer\n", store);
+        n--;
     }
+    return 0;
 }
