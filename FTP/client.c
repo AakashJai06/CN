@@ -1,8 +1,3 @@
-/*
- * TCP File Transfer Client
- * Connects to the server, sends a file request, and displays the received file content.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,48 +5,30 @@
 #include <arpa/inet.h>
 
 #define PORT 8080
-#define BUFFER_SIZE 1024
+#define MAX 100
 
 int main() {
-    int client_socket;
-    struct sockaddr_in server_addr;
-    char buffer[BUFFER_SIZE] = {0};
-    char filename[BUFFER_SIZE] = {0};
+    int serverSocket, n;
+    struct sockaddr_in server;
+    char filename[MAX], recvline[MAX];
 
-    // Create client socket
-    client_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (client_socket < 0) {
-        perror("Socket creation failed");
-        exit(EXIT_FAILURE);
-    }
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-    // Configure server address
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_port = htons(PORT);
 
-    // Connect to server
-    if (connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Connection failed");
-        exit(EXIT_FAILURE);
-    }
+    connect(serverSocket, (struct sockaddr*)&server, sizeof(server));
 
-    // Get filename from user
-    printf("Enter the filename to request: ");
+    printf("Enter the source file name: ");
     scanf("%s", filename);
 
-    // Send filename to server
-    send(client_socket, filename, strlen(filename), 0);
+    send(serverSocket, filename, strlen(filename),0);
 
-    // Receive and print file content
     printf("File content received:\n");
-    while (recv(client_socket, buffer, BUFFER_SIZE, 0) > 0) {
-        printf("%s", buffer);
-        memset(buffer, 0, BUFFER_SIZE);
+    while ((recv(serverSocket,recvline,MAX,0)) > 0) {
+        printf("%s", recvline);
     }
-
-    printf("\n");
-    close(client_socket);
-
+    close(serverSocket);
     return 0;
 }
