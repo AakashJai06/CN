@@ -4,7 +4,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-#define PORT 5035
+#define PORT 8080
 #define BUFFER_SIZE 1024
 
 int main() {
@@ -33,12 +33,12 @@ int main() {
     file = fopen(filename, "r");
     if (!file) {
         printf("File not found!\n");
-        strcpy(buffer, "ERROR: File not found.\n");
+        sprintf(buffer, "ERROR: File not found.\n");
         send(clientSocket, buffer, strlen(buffer), 0);
     } else {
         while (fgets(buffer, BUFFER_SIZE, file)) {
             send(clientSocket, buffer, strlen(buffer), 0);
-            usleep(10000);  // short delay to avoid flooding
+            usleep(10000); 
         }
         fclose(file);
     }
