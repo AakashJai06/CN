@@ -1,63 +1,34 @@
 #include <sys/socket.h>
-#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
+#define BUFFER_SIZE 1024
+#define PORT 8080
+
 int main(){
-
-  char buffer[100];
-  int k;
-  socklen_t len;
+  int sockfd,newsock;
   struct sockaddr_in server,client;
-  int sock_desc,temp_sock_desc;
+  socklen_t len = sizeof(client);
+  char buffer[BUFFER_SIZE];
 
-  sock_desc = socket(AF_INET,SOCK_STREAM,0);
-  if(sock_desc == -1){
-    printf("Error in socket creation!!\n");
-    return 1;
-  }
-  printf("Socket created sucessfully!!!\n");
+  sockfd = socket(AF_INET,SOCK_STREAM,0);
 
   server.sin_family = AF_INET;
-  server.sin_port = htons(3003);
+  server.sin_port = htons(PORT);
   server.sin_addr.s_addr = INADDR_ANY;
 
-  k = bind(sock_desc,(struct sockaddr *)&server,sizeof(server));
-  if(k == -1){
-    printf("Binding Error!!!\n");
-    return 1;
-  }
-  printf("Socket Binded Successfully!!\n");
+  bind(sockfd,(struct sockaddr *) &server,sizeof(server));
+  listen(sockfd,5);
 
-  k = listen(sock_desc,5);
-  if (k == -1) {
-    printf("Error In Listening!\n");
-    return 1;
-}
-  printf("Waiting for connections...\n"); 
+  newsock = accept(sockfd,(struct sockaddr *) &client,&len);
+  recv(newsock,buffer,BUFFER_SIZE,0);
 
-  len = sizeof(client);
+  printf("Message From Client: %s\n", buffer);
 
-  temp_sock_desc = accept(sock_desc,(struct sockaddr *)&client,&len);
-  if (temp_sock_desc == -1) {
-    printf("Error In Temporary Socket Creation!\n");
-    return 1;
-}
-  printf("Client Connected Successfully!\n");
-
-  k = recv(temp_sock_desc,buffer,sizeof(buffer)-1,0);
-  if (k == -1) {
-    printf("Error In Receiving Data!\n");
-    return 1;
-}
-buffer[k] = '\0'; 
-printf("Message From Client: %s\n", buffer);
-
-close(temp_sock_desc);
-    close(sock_desc);
-
-
+    close(newsock);
+    close(sockfd);
   return 0;
 }
